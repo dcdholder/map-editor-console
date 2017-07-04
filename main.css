@@ -1,0 +1,84 @@
+details {
+  border-left: 2px solid black;
+  border-right: 2px solid black;
+  border-bottom: 2px solid black;
+}
+
+.allDetails {
+  margin-top: 3px;
+  margin-bottom: 3px;
+  border-top: 2px solid black;
+}
+
+.detailsContents {
+  border-top: 2px solid black;
+}
+
+.wallMapTable {
+  border: 1px solid black;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.wallMapTable td {
+  border: 1px solid black;
+}
+
+.wallMapTable td:before {
+    content: "";
+	display: block;
+	padding-top: 100%;
+    float: left;
+}
+
+.wallMapWrapper {
+  margin: 5px;
+  display: inline-block;
+  width: 40%;
+}
+
+.palette {
+  margin: 5px;
+  display: inline-block;
+  vertical-align: top;
+  border: 2px solid black;
+  border-radius: 5px;
+  width:10%;
+}
+
+.paletteTitle {
+  border-bottom: 2px solid black;
+  text-align: center;
+}
+
+.paletteContents {
+  border-top: 2px solid black;
+  margin: 2px;
+}
+
+.paintTool {
+  border: 2px solid black;
+  border-radius: 5px;
+  margin-top: 2px;
+  text-align: center;
+}
+
+.objectIconTable {
+  width: 100%;
+}
+
+.objectIconTableVisibleTd {
+  border: 2px solid black;
+  border-radius: 8px;
+}
+
+.objectIconTable td {
+  width: 25%;
+}
+
+.objectIconTable td:before {
+  content: "";
+  display: block;
+  padding-top: 100%;
+  float: left;
+}
