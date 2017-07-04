@@ -48,7 +48,7 @@ class MapEditorPage extends React.Component {
     var allEmpty = true;
     for (let j=0;j<this.state.mapDimensions.y;j++) {
       for (let i=0;i<this.state.mapDimensions.x;i++) {
-        if (this.mapContents[j][i]=='w') {
+        if (this.mapContents[j][i]!='n') {
           allEmpty = false;
           break;
         }
@@ -161,11 +161,27 @@ class MapEditor extends React.Component {
       "Door":  [{"material": "Wood", "color": "#C19A6B", "character": 'd'}]
     };
 
+    this.characterToColorMap = this.generateCharacterToColorMap();
+
     this.state = {
       selectedTool:      "brush",
-      selectedColor:     "white",
-      selectedCharacter: "0"
+      selectedCharacter: "n"
     };
+  }
+
+  generateCharacterToColorMap() {
+    var characterToColorMap = {};
+    for (let objectType in this.constructionObjects) {
+      for (let objectIndex in this.constructionObjects[objectType]) {
+        let targetObject = this.constructionObjects[objectType][objectIndex];
+        characterToColorMap[targetObject.character] = targetObject.color;
+      }
+    }
+
+    //add a "default" character/color
+    characterToColorMap["n"] = "white"; //n for "none"
+
+    return characterToColorMap;
   }
 
   selectedToolRef(selectedTool) {
@@ -177,14 +193,12 @@ class MapEditor extends React.Component {
     var selectedCharacter;
     for (let objectIndex in this.constructionObjects[objectType]) {
       if (this.constructionObjects[objectType][objectIndex].material===objectMaterial) {
-        selectedColor     = this.constructionObjects[objectType][objectIndex].color;
         selectedCharacter = this.constructionObjects[objectType][objectIndex].character;
         break;
       }
     }
 
     this.setState({
-      selectedColor:     selectedColor,
       selectedCharacter: selectedCharacter
     });
   }
@@ -192,7 +206,7 @@ class MapEditor extends React.Component {
   render() {
     return (
       <div className="mapEditor">
-        <RoomMap dimensions={this.props.dimensions} contentsRef={this.props.contentsRef} paintTool={this.state.selectedTool} selectedColor={this.state.selectedColor} selectedCharacter={this.state.selectedCharacter} />
+        <RoomMap dimensions={this.props.dimensions} contentsRef={this.props.contentsRef} paintTool={this.state.selectedTool} selectedCharacter={this.state.selectedCharacter} characterToColorMap={this.characterToColorMap} />
         <MapPalette constructionObjects={this.constructionObjects} selectedToolRef={this.selectedToolRef} selectedObjectRef={this.selectedObjectRef} />
       </div>
     );
@@ -203,19 +217,154 @@ class RoomMap extends React.Component {
   constructor(props) {
     super(props);
 
-    this.floorColor = "white";
-    this.wallColor  = "#333333";
+    this.emptyChar = 'n';
+
+    this.state = {contents: this.initialContents()};
+    this.props.contentsRef(this.state.contents);
   }
 
-  colorOrEraseCell(e,rowIndex,colIndex) {
-    if (this.contents[rowIndex][colIndex]=='w') {
-      e.target.style.backgroundColor = this.floorColor;
-      this.contents[rowIndex][colIndex] = 'f';
-    } else {
-      e.target.style.backgroundColor = this.wallColor;
-      this.contents[rowIndex][colIndex] = 'w';
+  useTool(rowIndex,colIndex) {
+    console.log(this.props.paintTool);
+    switch(this.props.paintTool) {
+      case "brush":
+        this.brush(rowIndex,colIndex);
+        break;
+      case "bucket":
+        this.paintBucket(rowIndex,colIndex);
+        break;
+      case "eraser":
+        this.erase(rowIndex,colIndex); //function is same as brush, but with null character set as characterToUse
+        break;
+      case "clear":
+        this.clear(rowIndex,colIndex);
+        break;
     }
-    this.props.contentsRef(this.contents);
+  }
+
+  contentsCopy() {
+    var contents = [];
+    for (let j=0;j<this.props.dimensions.y;j++) {
+      contents[j] = [];
+      contents[j].push(...this.state.contents[j]);
+    }
+
+    return contents;
+  }
+
+  initialContents() {
+    var contents = [];
+    for (let j=0;j<this.props.dimensions.y;j++) {
+      contents[j] = [];
+      for (let i=0;i<this.props.dimensions.x;i++) {
+        contents[j][i] = this.emptyChar;
+      }
+    }
+
+    return contents;
+  }
+
+  brush(rowIndex,colIndex) {
+    var contents = this.contentsCopy();
+
+    contents[rowIndex][colIndex] = this.props.selectedCharacter;
+
+    this.setState({contents: contents});
+  }
+
+  erase(rowIndex,colIndex) {
+    var contents = this.contentsCopy();
+
+    contents[rowIndex][colIndex] = this.props.emptyChar;
+
+    this.setState({contents: contents});
+  }
+
+  paintBucket(rowIndex,colIndex) { //floodfill
+    var toCheck            = [];
+    var characterToReplace = this.state.contents[rowIndex][colIndex];
+
+    let contents = this.contentsCopy();
+
+    if (characterToReplace!=this.props.selectedCharacter) {
+      let contents = this.contentsCopy();
+
+      let alreadyChecked = [];
+      for (let j=0;j<this.props.dimensions.y;j++) {
+        alreadyChecked[j] = [];
+        for (let i=0;i<this.props.dimensions.x;i++) {
+          alreadyChecked[j].push(false);
+        }
+      }
+      alreadyChecked[rowIndex][colIndex] = true;
+
+      toCheck.push([colIndex,rowIndex]);
+      let oldToCheck;
+      while(toCheck.length>0) {
+        oldToCheck = [];
+        oldToCheck.push(...toCheck);
+        toCheck = [];
+
+        for(let oldToCheckIndex in oldToCheck) {
+          let y = oldToCheck[oldToCheckIndex][1];
+          let x = oldToCheck[oldToCheckIndex][0];
+
+          contents[y][x] = this.props.selectedCharacter;
+
+          if (x+1<this.state.contents[0].length) {
+            if (contents[y][x+1]==characterToReplace && !alreadyChecked[y][x+1]) {
+              alreadyChecked[y][x+1] = true;
+              toCheck.push([x+1,y]);
+            }
+          }
+          if (x-1>=0) {
+            if (contents[y][x-1]==characterToReplace && !alreadyChecked[y][x-1]) {
+              alreadyChecked[y][x-1] = true;
+              toCheck.push([x-1,y]);
+            }
+          }
+
+          if (y+1<this.state.contents[0].length) {
+            if (contents[y+1][x]==characterToReplace && !alreadyChecked[y+1][x]) {
+              alreadyChecked[y+1][x] = true;
+              toCheck.push([x,y+1]);
+            }
+          }
+          if (y-1>=0) {
+            if (contents[y-1][x]==characterToReplace && !alreadyChecked[y-1][x]) {
+              alreadyChecked[y-1][x] = true;
+              toCheck.push([x,y-1]);
+            }
+          }
+        }
+        this.setState({contents: contents});
+      }
+    }
+  }
+
+  clear(rowIndex,colIndex) {
+    var contents = this.contentsCopy();
+
+    for (let j=0;j<this.props.dimensions.y;j++) {
+      for (let i=0;i<this.props.dimensions.x;i++) {
+        contents[j][i] = this.props.emptyChar;
+      }
+    }
+
+    this.setState({contents: contents});
+  }
+
+  componentWillReceiveProps(nextProps) {
+    if (this.props.dimensions.x!=nextProps.dimensions.x || this.props.dimensions.y!=nextProps.dimensions.y) {
+      var contents = [];
+      for (let j=0;j<nextProps.dimensions.y;j++) {
+        contents[j] = [];
+        for (let i=0;i<nextProps.dimensions.x;i++) {
+          contents[j][i] = this.emptyChar;
+        }
+      }
+      this.setState({contents: contents});
+      this.props.contentsRef(contents);
+    }
   }
 
   render() {
@@ -223,12 +372,9 @@ class RoomMap extends React.Component {
     this.contents = [];
     for (let j=0;j<this.props.dimensions.y;j++) {
       let cols = [];
-      this.contents[j] = [];
       for (let i=0;i<this.props.dimensions.x;i++) {
-        cols.push(<td onClick={(e) => {this.colorOrEraseCell(e,j,i)}} style={{backgroundColor: this.floorColor}} name={i+','+j}></td>);
-        this.contents[j][i] = 'f';
+        cols.push(<td onClick={(e) => {this.useTool(j,i)}} style={{backgroundColor: this.props.characterToColorMap[this.state.contents[j][i]]}} name={i+','+j}></td>);
       }
-      this.props.contentsRef(this.contents);
 
       rows.push(
         <tr>
