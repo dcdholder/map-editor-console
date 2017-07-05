@@ -2,7 +2,7 @@ class MapEditorPage extends React.Component {
   constructor(props) {
     super(props);
 
-    this.mapEditorTitle        = "Map Editor";
+    this.mapEditorTitle        = "Acoustics Map Editor";
     this.maxNameLength         = 20;
     this.defaultDimensionsText = "WIDTHxHEIGHT";
 
