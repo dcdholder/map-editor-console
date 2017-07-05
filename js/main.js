@@ -447,12 +447,20 @@ class MapPalette extends React.Component {
   constructor(props) {
     super(props);
     this.iconsPerRow  = 4;
-    this.selectedTool = "brush";
+
+    this.selectedObjectColor = "black";
+
+    this.state = {
+      selectedTool: "brush"
+    }
   }
 
   changeTool(toolName) {
     this.props.selectedToolRef(toolName);
-    this.selectedTool = toolName;
+
+    this.setState({
+      selectedTool: toolName
+    })
   }
 
   changeObject(objectType,objectMaterial) {
@@ -472,14 +480,20 @@ class MapPalette extends React.Component {
           let backgroundColor = "white";
           let display         = "hidden";
           let title           = "";
+          let insetShadow     = "";
           if (rowIndex*this.iconsPerRow+colIndex<this.props.constructionObjects[objectType].length) {
             iconClass       = "objectIconTableVisibleTd";
             backgroundColor = this.props.constructionObjects[objectType][rowIndex*this.iconsPerRow+colIndex].color;
             display         = "visible";
             title           = this.props.constructionObjects[objectType][rowIndex*this.iconsPerRow+colIndex].material;
+
+            if (this.props.constructionObjects[objectType][rowIndex*this.iconsPerRow+colIndex].material==this.selectedObjectMaterial && objectType==this.selectedObjectType) {
+              this.selectedObjectColor = backgroundColor;
+              insetShadow              = " insetShadow";
+            }
           }
           iconTableRowCols.push(
-            <td className={iconClass} style={{backgroundColor: backgroundColor, display: display}} title={title} onClick={() => {this.changeObject(objectType,title)}}></td>
+            <td className={iconClass + insetShadow} style={{backgroundColor: backgroundColor, display: display}} title={title} onClick={() => {this.changeObject(objectType,title)}}></td>
           );
         }
 
@@ -503,6 +517,34 @@ class MapPalette extends React.Component {
       );
     }
 
+    var paintToolsNames = ["brush","bucket","eraser","clear"];
+    var paintToolsHtml  = [];
+    for (let paintToolsNamesIndex in paintToolsNames) {
+      let insetShadow    = '';
+
+      let leftArrowStyle  = {float: "left"};
+      let rightArrowStyle = {float: "right"};
+
+      if (this.state.selectedTool==paintToolsNames[paintToolsNamesIndex]) {
+        insetShadow = " insetShadow";
+        leftArrowStyle  = {
+          float: "left",
+          color: this.selectedObjectColor
+        };
+
+        rightArrowStyle  = {
+          float: "right",
+          color: this.selectedObjectColor
+        };
+      }
+
+      paintToolsHtml.push(
+        <div className={"paintTool" + insetShadow} onClick={() => {this.changeTool(paintToolsNames[paintToolsNamesIndex])}}>
+          <span style={leftArrowStyle}>&nbsp;▶</span><span>{paintToolsNames[paintToolsNamesIndex].charAt(0).toUpperCase() + paintToolsNames[paintToolsNamesIndex].slice(1)}</span><span style={rightArrowStyle}>◀&nbsp;</span>
+        </div>
+      );
+    }
+
     return(
       <div className="palette">
         <div className="paletteTitle">
@@ -512,18 +554,7 @@ class MapPalette extends React.Component {
           <div className="constructionObjects">
             {constructionObjectsHtml}
           </div>
-          <div className="paintTool" onClick={() => {this.changeTool("brush")}}>
-            Brush
-          </div>
-          <div className="paintTool" onClick={() => {this.changeTool("bucket")}}>
-            Paint Bucket
-          </div>
-          <div className="paintTool" onClick={() => {this.changeTool("eraser")}}>
-            Eraser
-          </div>
-          <div className="paintTool" onClick={() => {this.changeTool("clear")}}>
-            Clear
-          </div>
+          {paintToolsHtml}
         </div>
       </div>
     );
