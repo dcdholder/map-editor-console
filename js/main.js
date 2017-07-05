@@ -10,6 +10,7 @@ class MapEditorPage extends React.Component {
     this.maxMapWidth     = 100;
     this.minMapWidth     = 5;
 
+    this.name           = "default";
     this.dimensionsText = this.defaultMapWidth + 'x' + this.defaultMapWidth;
 
     this.mapContents;
@@ -18,6 +19,25 @@ class MapEditorPage extends React.Component {
     this.state = {
       mapDimensions: {x: this.defaultMapWidth, y: this.defaultMapWidth}
     };
+  }
+
+  changeName(e) {
+    this.name = e.target.value;
+  }
+
+  downloadContentsAsText() {
+    var contentsText = "";
+    for (let rowIndex in this.mapContents) {
+      for (let colIndex in this.mapContents[rowIndex]) {
+        contentsText = contentsText.concat(this.mapContents[rowIndex][colIndex]);
+      }
+      if (rowIndex!=this.mapContents.length-1) {
+        contentsText = contentsText.concat('\n');
+      }
+    }
+
+    var textBlob = new Blob([contentsText], { type : "text/plain", endings: "native"});
+    window.saveAs(textBlob, this.name + ".txt");
   }
 
   refreshMapContents(contents) {
@@ -145,7 +165,7 @@ class MapEditorPage extends React.Component {
                 <tbody>
                   <tr>
                     <td><label>Name: </label></td>
-                    <td><input id="nameText" type="text" size={this.maxNameLength} maxLength={this.maxNameLength} /></td>
+                    <td><input id="nameText" type="text" size={this.maxNameLength} maxLength={this.maxNameLength} onChange={(e) => this.changeName(e)} /></td>
                     <td></td>
                     <td></td>
                   </tr>
@@ -168,8 +188,7 @@ class MapEditorPage extends React.Component {
           </details>
         </div>
 
-        <button>Save</button>
-        <button>Cancel</button>
+        <button onClick={() => this.downloadContentsAsText()}>Save</button>
       </div>
     );
   }
@@ -320,7 +339,7 @@ class RoomMap extends React.Component {
   erase(rowIndex,colIndex) {
     var contents = this.contentsCopy();
 
-    contents[rowIndex][colIndex] = this.props.emptyChar;
+    contents[rowIndex][colIndex] = this.emptyChar;
 
     this.setState({contents: contents});
   }
@@ -392,7 +411,7 @@ class RoomMap extends React.Component {
 
     for (let j=0;j<this.props.dimensions.y;j++) {
       for (let i=0;i<this.props.dimensions.x;i++) {
-        contents[j][i] = this.props.emptyChar;
+        contents[j][i] = this.emptyChar;
       }
     }
 
