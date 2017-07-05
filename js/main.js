@@ -8,6 +8,7 @@ class MapEditorPage extends React.Component {
 
     this.defaultMapWidth = 20;
     this.maxMapWidth     = 100;
+    this.minMapWidth     = 5;
 
     this.dimensionsText = this.defaultMapWidth + 'x' + this.defaultMapWidth;
 
@@ -38,6 +39,7 @@ class MapEditorPage extends React.Component {
   resizeMapFromTextUnconditionally(e) {
     var dimensionsFromText = this.dimensionsFromDimensionsText();
     this.resizeMapFromDimensions(dimensionsFromText);
+    this.displayDimensionsWarning();
   }
 
   //the onChange handler here also affects this.dimensionsText
@@ -58,14 +60,22 @@ class MapEditorPage extends React.Component {
       }
     }
 
+    this.hideDimensionsWarning();
+
     if (allEmpty) {
       this.resizeMapFromDimensions(dimensionsFromText);
+      this.displayDimensionsWarning();
+    } else {
+      this.setState({
+        dimensionsWarning:            "<- Click to confirm resize. Map will be cleared.",
+        dimensionsWarningDisplayMode: "block"
+      });
     }
   }
 
   resizeMapFromDimensions(dimensions) {
     var newDimensions = dimensions;
-    if (dimensions!={}) {
+    if (Object.keys(dimensions).length!=0) {
       if (dimensions.x>this.maxMapWidth) {
         newDimensions.x = this.maxMapWidth;
       }
@@ -74,7 +84,15 @@ class MapEditorPage extends React.Component {
         newDimensions.y = this.maxMapWidth;
       }
 
-      if (dimensions.x<this.maxMapWidth && dimensions.y>this.maxMapWidth) {
+      if (dimensions.x<this.minMapWidth) {
+        newDimensions.x = this.minMapWidth;
+      }
+
+      if (dimensions.y<this.minMapWidth) {
+        newDimensions.y = this.minMapWidth;
+      }
+
+      if (dimensions.x<this.maxMapWidth && dimensions.y<this.maxMapWidth && dimensions.x>this.minMapWidth && dimensions.y>this.minMapWidth) {
         this.hideDimensionsWarning();
       }
     } else {
@@ -84,28 +102,32 @@ class MapEditorPage extends React.Component {
     this.setState({mapDimensions: newDimensions});
   }
 
-  displayDimensionsWarning(e) {
+  displayDimensionsWarning() {
     var dimensionsFromText = this.dimensionsFromDimensionsText();
 
     var dimensionsWarning = '';
-    if (dimensionsFromText=={}) {
+    if (Object.keys(dimensionsFromText).length === 0) {
       dimensionsWarning = "Malformed input."; //TODO: needs better wording
     } else if(dimensionsFromText.x>this.maxMapWidth) {
-      dimensionsWarning = "Width too large."
+      dimensionsWarning = "Width too large - max is " + this.maxMapWidth + ".";
     } else if(dimensionsFromText.y>this.maxMapWidth) {
-      dimensionsWarning = "Height too large."
+      dimensionsWarning = "Height too large - max is " + this.maxMapWidth + ".";
+    } else if(dimensionsFromText.x<this.minMapWidth) {
+      dimensionsWarning = "Width too small - min is " + this.minMapWidth + ".";
+    } else if(dimensionsFromText.y<this.minMapWidth) {
+      dimensionsWarning = "Height too small - min is " + this.minMapWidth + ".";
     }
 
     if (dimensionsWarning!='') {
       this.setState({
         dimensionsWarning:            dimensionsWarning,
-        dimensionsWarningDisplayMode: block
+        dimensionsWarningDisplayMode: "block"
       });
     }
   }
 
   hideDimensionsWarning() {
-    this.setState({dimensionsWarningDisplayMode: "block"});
+    this.setState({dimensionsWarningDisplayMode: "none"});
   }
 
   render() {
@@ -122,11 +144,14 @@ class MapEditorPage extends React.Component {
                   <tr>
                     <td><label>Name: </label></td>
                     <td><input id="nameText" type="text" size={this.maxNameLength} maxLength={this.maxNameLength} /></td>
+                    <td></td>
+                    <td></td>
                   </tr>
                   <tr>
                     <td><label>Dimensions: </label></td>
-                    <td><input id="mapDimensionsText" type="text" size={this.maxNameLength} maxLength={this.maxNameLength} defaultValue={this.defaultMapWidth + "x" + this.defaultMapWidth} placeholder={this.defaultDimensionsText} onChange={(e) => this.resizeMapFromTextIfEmpty(e)} onBlur={() => this.displayDimensionsWarning()} /></td>
+                    <td><input id="mapDimensionsText" type="text" size={this.maxNameLength} maxLength={this.maxNameLength} defaultValue={this.defaultMapWidth + "x" + this.defaultMapWidth} placeholder={this.defaultDimensionsText} onChange={(e) => this.resizeMapFromTextIfEmpty(e)} /></td>
                     <td><button onClick={(e) => this.resizeMapFromTextUnconditionally(e)}>Resize</button></td>
+                    <td><span style={{display: this.state.dimensionsWarningDisplayMode}}>{this.state.dimensionsWarning}</span></td>
                   </tr>
                 </tbody>
               </table>
@@ -323,7 +348,7 @@ class RoomMap extends React.Component {
             }
           }
 
-          if (y+1<this.state.contents[0].length) {
+          if (y+1<this.state.contents.length) {
             if (contents[y+1][x]==characterToReplace && !alreadyChecked[y+1][x]) {
               alreadyChecked[y+1][x] = true;
               toCheck.push([x,y+1]);
@@ -368,6 +393,8 @@ class RoomMap extends React.Component {
   }
 
   render() {
+    this.props.contentsRef(this.state.contents);
+
     var rows = [];
     this.contents = [];
     for (let j=0;j<this.props.dimensions.y;j++) {
