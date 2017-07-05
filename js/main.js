@@ -39,7 +39,7 @@ class MapEditorPage extends React.Component {
   resizeMapFromTextUnconditionally(e) {
     var dimensionsFromText = this.dimensionsFromDimensionsText();
     this.resizeMapFromDimensions(dimensionsFromText);
-    
+
     this.hideDimensionsWarning();
     this.displayDimensionsWarning();
   }
@@ -246,12 +246,31 @@ class RoomMap extends React.Component {
 
     this.emptyChar = 'n';
 
+    this.clickAndDragToolEnabled = false;
+
     this.state = {contents: this.initialContents()};
     this.props.contentsRef(this.state.contents);
   }
 
+  enableClickAndDragTool(rowIndex,colIndex) {
+    if (this.props.paintTool=="brush" || this.props.paintTool=="eraser") {
+      this.clickAndDragToolEnabled = true;
+    }
+
+    this.useTool(rowIndex,colIndex);
+  }
+
+  disableClickAndDragTool() {
+    this.clickAndDragToolEnabled = false;
+  }
+
+  useClickAndDragToolIfEnabled(rowIndex,colIndex) {
+    if (this.clickAndDragToolEnabled) {
+      this.useTool(rowIndex,colIndex);
+    }
+  }
+
   useTool(rowIndex,colIndex) {
-    console.log(this.props.paintTool);
     switch(this.props.paintTool) {
       case "brush":
         this.brush(rowIndex,colIndex);
@@ -402,7 +421,7 @@ class RoomMap extends React.Component {
     for (let j=0;j<this.props.dimensions.y;j++) {
       let cols = [];
       for (let i=0;i<this.props.dimensions.x;i++) {
-        cols.push(<td onClick={(e) => {this.useTool(j,i)}} style={{backgroundColor: this.props.characterToColorMap[this.state.contents[j][i]]}} name={i+','+j}></td>);
+        cols.push(<td onMouseDown={() => this.enableClickAndDragTool(j,i)} onMouseOver={() => this.useClickAndDragToolIfEnabled(j,i)} onClick={(e) => {this.useTool(j,i)}} style={{backgroundColor: this.props.characterToColorMap[this.state.contents[j][i]]}} name={i+','+j}></td>);
       }
 
       rows.push(
@@ -414,7 +433,7 @@ class RoomMap extends React.Component {
 
     return (
       <div className="wallMapWrapper">
-        <table className="wallMapTable" id="wallMapTable">
+        <table onMouseLeave={() => this.disableClickAndDragTool()} onMouseUp={() => this.disableClickAndDragTool()} className="wallMapTable" id="wallMapTable">
           <tbody>
             {rows}
           </tbody>
