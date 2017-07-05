@@ -39,6 +39,8 @@ class MapEditorPage extends React.Component {
   resizeMapFromTextUnconditionally(e) {
     var dimensionsFromText = this.dimensionsFromDimensionsText();
     this.resizeMapFromDimensions(dimensionsFromText);
+    
+    this.hideDimensionsWarning();
     this.displayDimensionsWarning();
   }
 
